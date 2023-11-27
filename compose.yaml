@@ -1,0 +1,102 @@
+version: "3.9"
+
+services:
+  reverse_proxy_nginx:
+    image: nginx:1.25.3-alpine
+    container_name: reverse_proxy_nginx
+    depends_on:
+      - nginx
+      - next
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/reverse_proxy_nginx/config/:/etc/nginx/conf.d:ro
+      - ./docker/nginx/ssl/:/etc/nginx/ssl:ro
+      - ./docker/next/ssl/:/etc/next/ssl:ro
+    networks:
+      - frontend
+
+  next:
+    build:
+      context: .
+      dockerfile: ./docker/next/Dockerfile
+    container_name: next
+    restart: always
+    volumes:
+      - ./next:/var/www/next
+    env_file:
+      - .env
+    command: "npm run dev -- -p 80"
+    networks:
+      - frontend
+
+  php:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    container_name: php
+    restart: always
+    working_dir: /var/www/symfony
+    volumes:
+      - ./symfony:/var/www/symfony
+    env_file:
+      - .env
+    networks:
+      - backend
+
+  nginx:
+    image: nginx:1.25.3-alpine
+    depends_on:
+      - php
+    container_name: nginx
+    restart: always
+    volumes:
+      - ./symfony:/var/www/symfony
+      - ./docker/nginx/config/:/etc/nginx/conf.d:ro
+      - ./docker/nginx/ssl/:/etc/nginx/ssl:ro
+    networks:
+      - backend
+      - frontend
+
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-15}-alpine
+    container_name: postgres
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - backend
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    restart: always
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_WEB_PORT:-8025}:8025"
+    networks:
+      - backend
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - backend
+
+volumes:
+  postgres-data:
+
+networks:
+  frontend:
+  backend:

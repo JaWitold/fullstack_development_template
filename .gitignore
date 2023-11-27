@@ -1,0 +1,8 @@
+### > IDE
+/.idea/
+### < IDE
+
+compose.yaml.override
+
+**/.env
+**/*.local
