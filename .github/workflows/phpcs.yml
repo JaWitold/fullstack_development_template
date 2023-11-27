@@ -1,0 +1,42 @@
+name: PHP Coding Standards
+
+on: [ push, pull_request ]
+
+jobs:
+  coding-standards:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict
+        working-directory: ./symfony
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "COMPOSER_CACHE=$(composer config cache-files-dir)" >> $GITHUB_ENV
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.COMPOSER_CACHE }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2.5'
+          extensions: mbstring, xml, ctype, iconv, intl
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress --no-scripts
+        working-directory: ./symfony
+
+      - name: Check coding standards
+        run: |
+          cp .env.example .env
+          ./vendor/bin/phpcs
+        working-directory: ./symfony
