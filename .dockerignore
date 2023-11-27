@@ -1,0 +1,15 @@
+### > IDE
+/.idea/
+### < IDE
+
+### > GIT
+.git/
+.gitignore
+### < GIT
+
+### > MISC
+ssl/
+docker/
+!docker/**/config
+readme.md
+### < MISC
