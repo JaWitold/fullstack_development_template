@@ -1,8 +1,8 @@
-version: "3.9"
+version: "3.8"
 
 services:
   reverse_proxy_nginx:
-    image: nginx:1.25.3-alpine
+    image: nginx:1.25.4-alpine3.18-slim
     container_name: reverse_proxy_nginx
     depends_on:
       - nginx
@@ -48,7 +48,7 @@ services:
       - backend
 
   nginx:
-    image: nginx:1.25.3-alpine
+    image: nginx:1.25.4-alpine3.18-slim
     depends_on:
       - php
     container_name: nginx
@@ -62,7 +62,7 @@ services:
       - frontend
 
   postgres:
-    image: postgres:${POSTGRES_VERSION:-15}-alpine
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
     container_name: postgres
     restart: always
     volumes:
@@ -87,7 +87,7 @@ services:
       - frontend
 
   redis:
-    image: redis:latest
+    image: redis:7.2.4-alpine
     container_name: redis
     restart: always
     ports:
