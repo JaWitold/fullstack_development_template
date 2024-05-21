@@ -3,7 +3,7 @@
 create_certificate_for_service() {
   local service_name=$1
   openssl genrsa -out "${service_name}_key.pem" 4096
-  openssl req -new -sha256 -subj "/CN=${service_name}-template.com" -key "${service_name}_key.pem" -passin env:SERVICE_PASS -out "${service_name}_ca.csr"
+  openssl req -new -sha256 -subj "/CN=${service_name}-neendu.com" -key "${service_name}_key.pem" -passin env:SERVICE_PASS -out "${service_name}_ca.csr"
   openssl x509 -req -sha256 -days "$SSL_VALIDITY_DAYS" -in "${service_name}_ca.csr" -CA root-ca.pem -CAkey root-ca-key.pem -passin env:SERVICE_PASS -out "${service_name}_cert.pem" -extfile config/extfile.cnf -CAcreateserial
   cat "${service_name}_cert.pem" root-ca.pem > "${service_name}_chain.pem"
   mkdir -p "../docker/${service_name}/ssl"

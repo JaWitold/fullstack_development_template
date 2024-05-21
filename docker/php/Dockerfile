@@ -1,6 +1,6 @@
 FROM php:8.3.6-fpm AS build
 
-RUN apt-get update && apt-get install -y git curl zip unzip libpq-dev
+RUN apt-get update && apt-get install -y git curl zip unzip libpq-dev libicu-dev
 
 # install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -15,6 +15,9 @@ COPY docker/php/config/opcache.ini "${PHP_INI_DIR}/conf.d"
 # install xdebug
 RUN pecl install xdebug && docker-php-ext-enable xdebug
 COPY docker/php/config/xdebug.ini "${PHP_INI_DIR}/conf.d"
+
+# install intl
+RUN docker-php-ext-configure intl && docker-php-ext-install intl
 
 #FROM composer:latest AS composer
 

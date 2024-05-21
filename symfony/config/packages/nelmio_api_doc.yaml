@@ -1,0 +1,28 @@
+nelmio_api_doc:
+    use_validation_groups: true
+    documentation:
+#        servers:
+#            - url: https://api.neendu.com
+#              description: API over HTTPS
+        info:
+            title: Neendu API
+            description: This is an awesome app!
+            version: 0.0.1
+#        components:
+#            schemas:
+#                Point:
+#                    description: "Response for some queries"
+#                    type: object
+#                    properties:
+#                        x:
+#                            type: float
+#                            example: 42.3
+#                        y:
+#                            type: float
+#                            example: 42.3
+
+    areas: # to filter documented areas
+        path_patterns:
+            - ^/api(?!/doc$) # Accepts routes under /api except /api/doc
+#        host_patterns: # document only routes with a host of the form api.*
+#            - ^api\.

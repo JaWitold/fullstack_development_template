@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+
+<title>Point index</title>
+
+{% block body %}
+    <h1>Point index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>X</th>
+                <th>Y</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for point in points %}
+            <tr>
+                <td>{{ point.id }}</td>
+                <td>{{ point.x }}</td>
+                <td>{{ point.y }}</td>
+                <td>
+                    <a href="{{ path('app_point_show', {'id': point.id}) }}">show</a>
+                    <a href="{{ path('app_point_edit', {'id': point.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="4">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_point_new') }}">Create new</a>
+{% endblock %}
