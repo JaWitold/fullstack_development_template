@@ -158,22 +158,22 @@ jobs:
       - name: Run PHPUnit
         run: |
           mkdir -p build/logs
-          ./vendor/bin/phpunit --testsuite Unit --coverage-clover build/logs/clover.xml
+          ./vendor/bin/phpunit --testsuite Unit --log-junit build/logs/artifacts.xml --coverage-text
         working-directory: ./symfony
 
       - name: Report coverage
         uses: dorny/test-reporter@v2
         with:
           name: Unit Test Coverage
-          path: symfony/build/logs/clover.xml
-          reporter: php-clover
           fail-on-error: true
+          reporter: php-junit
+          path: symfony/build/logs/junit.xml
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v5
         with:
           name: unit-test-coverage-report
-          path: symfony/build/logs/clover.xml
+          path: symfony/build/logs/junit.xml
 
   feature-tests:
     name: Feature Tests
