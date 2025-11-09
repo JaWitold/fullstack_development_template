@@ -78,7 +78,7 @@ jobs:
     needs: build
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -110,7 +110,7 @@ jobs:
 
       - name: Run PHPUnit
         env:
-          DATABASE_URL: "postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?serverVersion=16&charset=utf8"
+          DATABASE_URL: "postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?serverVersion=18&charset=utf8"
         run: |
           cp .env.example .env
           php bin/console doctrine:database:create --if-not-exists
