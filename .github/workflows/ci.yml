@@ -166,7 +166,7 @@ jobs:
         with:
           name: Unit Test Coverage
           fail-on-error: true
-          reporter: php-junit
+          reporter: java-junit
           path: symfony/build/logs/junit.xml
 
       - name: Upload coverage artifact
@@ -215,7 +215,7 @@ jobs:
 
       - name: Run PHPUnit
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.POSTGRES_DB }}?serverVersion=18&charset=utf8
         run: |
           php bin/console doctrine:database:create --if-not-exists
           php bin/console doctrine:schema:create
