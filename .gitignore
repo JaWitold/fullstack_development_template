@@ -4,7 +4,6 @@
 
 compose.yaml.override
 
-**/.env
 **/*.local
 *.pem
 docker/**/ssl

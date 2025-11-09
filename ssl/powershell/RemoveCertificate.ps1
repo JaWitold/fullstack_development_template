@@ -3,6 +3,8 @@ param(
     [string]$FilePath = "thumbprint.txt"
 )
 
+Set-Location -Path $PSScriptRoot
+
 # Function to prompt user action when the thumbprint file does not exist
 function PromptUserAction {
     Get-ChildItem -Path Cert:\LocalMachine\Root | Format-Table Thumbprint, Subject -AutoSize
