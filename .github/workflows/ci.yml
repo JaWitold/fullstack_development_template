@@ -171,7 +171,7 @@ jobs:
         uses: VeryGoodOpenSource/very_good_coverage@v3
         with:
           path: Create new scratch file from selectionbuild/logs/lcov.info
-          min_coverage: 80
+          min_coverage: ${ vars.MIN_COVERAGE }
 
       - name: Report coverage
         uses: dorny/test-reporter@v2
