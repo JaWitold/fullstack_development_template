@@ -99,7 +99,7 @@ jobs:
           tools: composer:v2
 
       - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyze
+        run: ./vendor/bin/phpstan analyze --no-progress --error-format=github
         working-directory: ./symfony
 
   php-cs-fixer:
@@ -127,7 +127,7 @@ jobs:
           tools: composer:v2
 
       - name: Run PHP-CS-Fixer
-        run: ./vendor/bin/php-cs-fixer fix --dry-run
+        run: ./vendor/bin/php-cs-fixer check --show-progress=dots --using-cache=no --verbose
         working-directory: ./symfony
 
   unit-tests:
