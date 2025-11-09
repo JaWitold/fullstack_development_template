@@ -1,7 +1,7 @@
 # Use the official lightweight Node.js 16 image.
 # https://hub.docker.com/_/node
-ARG NODE_VERSION=node:25-alpine
-FROM node:${NODE}
+ARG NODE_VERSION=20-alpine
+FROM node:${NODE_VERSION}
 
 # Set the working directory in the container
 WORKDIR /var/www/next
