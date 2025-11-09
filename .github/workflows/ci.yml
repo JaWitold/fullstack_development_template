@@ -143,6 +143,7 @@ jobs:
           POSTGRES_HOST: postgres
           DATABASE_URL: "postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?serverVersion=18&charset=utf8"
         run: |
+          php bin/console debug:dotenv
           php bin/console doctrine:database:create --if-not-exists
           php bin/console doctrine:schema:create
           ./vendor/bin/phpunit --testsuite Feature
