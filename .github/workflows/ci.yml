@@ -164,13 +164,13 @@ jobs:
       - name: Convert Clover to LCOV
         uses: andstor/clover2lcov-action@v1
         with:
-          src: build/logs/clover.xml
-          dst: build/logs/lcov.info
+          src: symfony/build/logs/clover.xml
+          dst: Create new scratch file from selectionbuild/logs/lcov.info
 
       - name: Check code coverage
         uses: VeryGoodOpenSource/very_good_coverage@v3
         with:
-          path: build/logs/lcov.info
+          path: Create new scratch file from selectionbuild/logs/lcov.info
           min_coverage: 80
 
       - name: Report coverage
