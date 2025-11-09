@@ -1,29 +1,34 @@
 name: CI
 
-on: [ push, pull_request ]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      composer-cache-key: ${{ steps.composer-cache.outputs.key }}
+      cache-key: ${{ steps.composer-cache.outputs.cache-primary-key }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Validate composer.json and composer.lock
         run: composer validate --strict
         working-directory: ./symfony
 
-      - name: Get Composer Cache Directory
-        id: composer-cache-dir
-        run: echo "COMPOSER_CACHE_DIR=$(composer config cache-files-dir)" >> $GITHUB_ENV
-        working-directory: ./symfony
-
-      - name: Cache Composer dependencies
+      - name: Cache Composer dependencies and vendor directory
         id: composer-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          path: ${{ env.COMPOSER_CACHE_DIR }}
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
           key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
@@ -35,6 +40,7 @@ jobs:
           tools: composer:v2
 
       - name: Install PHP dependencies
+        if: steps.composer-cache.outputs.cache-hit != 'true'
         run: composer install --prefer-dist --no-progress --no-scripts
         working-directory: ./symfony
 
@@ -42,19 +48,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Get Composer Cache Directory
-        id: composer-cache-dir
-        run: echo "COMPOSER_CACHE_DIR=$(composer config cache-files-dir)" >> $GITHUB_ENV
-        working-directory: ./symfony
-
-      - name: Restore Composer cache
-        uses: actions/cache@v3
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
         with:
-          path: ${{ env.COMPOSER_CACHE_DIR }}
-          key: ${{ needs.build.outputs.composer-cache-key }}
-          restore-keys: ${{ runner.os }}-composer-
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ needs.build.outputs.cache-key }}
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -62,10 +64,6 @@ jobs:
           php-version: '${{ vars.PHP_VERSION }}'
           extensions: mbstring, xml, ctype, iconv, intl
           tools: composer:v2
-
-      - name: Install PHP dependencies
-        run: composer install --prefer-dist --no-progress --no-scripts
-        working-directory: ./symfony
 
       - name: Run QC tools
         run: |
@@ -93,19 +91,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Get Composer Cache Directory
-        id: composer-cache-dir
-        run: echo "COMPOSER_CACHE_DIR=$(composer config cache-files-dir)" >> $GITHUB_ENV
-        working-directory: ./symfony
-
-      - name: Restore Composer cache
-        uses: actions/cache@v3
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
         with:
-          path: ${{ env.COMPOSER_CACHE_DIR }}
-          key: ${{ needs.build.outputs.composer-cache-key }}
-          restore-keys: ${{ runner.os }}-composer-
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ needs.build.outputs.cache-key }}
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -113,10 +107,6 @@ jobs:
           php-version: '${{ vars.PHP_VERSION }}'
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql
           tools: composer:v2
-
-      - name: Install PHP dependencies
-        run: composer install --prefer-dist --no-progress --no-scripts
-        working-directory: ./symfony
 
       - name: Run PHPUnit
         env:
