@@ -56,7 +56,8 @@ jobs:
           path: |
             ~/.cache/composer
             ./symfony/vendor
-          key: ${{ needs.build.outputs.cache-key }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -99,7 +100,8 @@ jobs:
           path: |
             ~/.cache/composer
             ./symfony/vendor
-          key: ${{ needs.build.outputs.cache-key }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
