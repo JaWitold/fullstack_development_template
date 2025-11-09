@@ -71,7 +71,7 @@ jobs:
           tools: composer:v2
 
       - name: Run PHPCS
-        run: ./vendor/bin/phpcs
+        run: ./vendor/bin/phpcs --no-cache
         working-directory: ./symfony
 
   phpstan:
@@ -158,8 +158,20 @@ jobs:
       - name: Run PHPUnit
         run: |
           mkdir -p build/logs
-          ./vendor/bin/phpunit --testsuite Unit --log-junit build/logs/artifacts.xml --coverage-text
+          ./vendor/bin/phpunit --testsuite Unit --log-junit build/logs/junit.xml --coverage-text --coverage-clover build/logs/clover.xml
         working-directory: ./symfony
+
+      - name: Convert Clover to LCOV
+        uses: andstor/clover2lcov-action@v1
+        with:
+          src: build/logs/clover.xml
+          dst: build/logs/lcov.info
+
+      - name: Check code coverage
+        uses: VeryGoodOpenSource/very_good_coverage@v3
+        with:
+          path: build/logs/lcov.info
+          min_coverage: 80
 
       - name: Report coverage
         uses: dorny/test-reporter@v2
