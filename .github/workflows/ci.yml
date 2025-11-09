@@ -73,9 +73,35 @@ jobs:
           ./vendor/bin/php-cs-fixer fix --dry-run
         working-directory: ./symfony
 
-  testing:
+  unit-tests:
     runs-on: ubuntu-latest
-    needs: build
+    needs: quality-control
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ vars.PHP_VERSION }}'
+          extensions: mbstring, xml, ctype, iconv, intl
+          tools: composer:v2
+
+      - name: Run PHPUnit
+        run: ./vendor/bin/phpunit --testsuite Unit
+        working-directory: ./symfony
+
+  feature-tests:
+    runs-on: ubuntu-latest
+    needs: quality-control
     services:
       postgres:
         image: postgres:18-alpine
@@ -115,5 +141,5 @@ jobs:
         run: |
           php bin/console doctrine:database:create --if-not-exists
           php bin/console doctrine:schema:create
-          ./vendor/bin/phpunit
+          ./vendor/bin/phpunit --testsuite Feature
         working-directory: ./symfony
