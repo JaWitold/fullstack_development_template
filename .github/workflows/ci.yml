@@ -93,11 +93,28 @@ jobs:
         with:
           php-version: '${{ vars.PHP_VERSION }}'
           extensions: mbstring, xml, ctype, iconv, intl
+          coverage: xdebug
           tools: composer:v2
 
       - name: Run PHPUnit
-        run: ./vendor/bin/phpunit --testsuite Unit
+        run: |
+          mkdir -p build/logs
+          ./vendor/bin/phpunit --testsuite Unit --coverage-clover build/logs/clover.xml
         working-directory: ./symfony
+
+      - name: Report coverage
+        uses: dorny/test-reporter@v2
+        with:
+          name: Unit Test Coverage
+          path: symfony/build/logs/clover.xml
+          reporter: php-clover
+          fail-on-error: true
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: unit-test-coverage-report
+          path: symfony/build/logs/clover.xml
 
   feature-tests:
     runs-on: ubuntu-latest
@@ -137,14 +154,10 @@ jobs:
 
       - name: Run PHPUnit
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_HOST: postgres
-          DATABASE_URL: "postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?serverVersion=18&charset=utf8"
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           php bin/console debug:dotenv
-#          php bin/console doctrine:database:create --if-not-exists
-#          php bin/console doctrine:schema:create
-#          ./vendor/bin/phpunit --testsuite Feature
+          php bin/console doctrine:database:create --if-not-exists
+          php bin/console doctrine:schema:create
+          ./vendor/bin/phpunit --testsuite Feature
         working-directory: ./symfony
