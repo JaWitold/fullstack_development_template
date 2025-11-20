@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   reverse_proxy_nginx:
-    image: nginx:1.25.4-alpine3.18-slim
+    image: nginx:${NGINX_VERSION}-alpine-slim
     container_name: reverse_proxy_nginx
     depends_on:
       - nginx
@@ -23,6 +21,8 @@ services:
     build:
       context: .
       dockerfile: ./docker/next/Dockerfile
+      args:
+        - NODE_VERSION=${NODE_VERSION}-alpine
     container_name: next
     restart: always
     volumes:
@@ -37,6 +37,8 @@ services:
     build:
       context: .
       dockerfile: ./docker/php/Dockerfile
+      args:
+        - PHP_VERSION=${PHP_VERSION}-fpm-alpine
     container_name: php
     restart: always
     working_dir: /var/www/symfony
@@ -48,7 +50,7 @@ services:
       - backend
 
   nginx:
-    image: nginx:1.25.4-alpine3.18-slim
+    image: nginx:${NGINX_VERSION}-alpine-slim
     depends_on:
       - php
     container_name: nginx
@@ -62,7 +64,7 @@ services:
       - frontend
 
   postgres:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    image: postgres:${POSTGRES_VERSION:-18}-alpine
     container_name: postgres
     restart: always
     volumes:
@@ -71,6 +73,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
       POSTGRES_DB: ${POSTGRES_DB:-app}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}" ]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     networks:
@@ -82,16 +89,17 @@ services:
     restart: always
     ports:
       - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_HTTP_PORT:-8025}:8025"
     networks:
       - backend
       - frontend
 
-  redis:
-    image: redis:7.2.4-alpine
-    container_name: redis
+  cache:
+    image: ${CACHE_IMAGE:-valkey/valkey}:${CACHE_VERSION}-alpine
+    container_name: cache
     restart: always
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${CACHE_PORT:-6379}:6379"
     networks:
       - backend
 

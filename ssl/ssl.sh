@@ -1,5 +1,8 @@
 #!/bin/bash
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+cd "$SCRIPT_DIR"
+
 create_certificate_for_service() {
   local service_name=$1
   openssl genrsa -out "${service_name}_key.pem" 4096

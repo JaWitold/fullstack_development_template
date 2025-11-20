@@ -1,0 +1,235 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.composer-cache.outputs.cache-primary-key }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict
+        working-directory: ./symfony
+
+      - name: Cache Composer dependencies and vendor directory
+        id: composer-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ vars.PHP_VERSION }}'
+          extensions: mbstring, xml, ctype, iconv, intl
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        if: steps.composer-cache.outputs.cache-hit != 'true'
+        run: composer install --prefer-dist --no-progress --no-scripts
+        working-directory: ./symfony
+
+  phpcs:
+    name: PHP Code Sniffer
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ vars.PHP_VERSION }}'
+          extensions: mbstring, xml, ctype, iconv, intl
+          tools: composer:v2
+
+      - name: Run PHPCS
+        run: ./vendor/bin/phpcs --no-cache
+        working-directory: ./symfony
+
+  phpstan:
+    name: PHPStan Analysis
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ vars.PHP_VERSION }}'
+          extensions: mbstring, xml, ctype, iconv, intl
+          tools: composer:v2
+
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyze --no-progress --error-format=github
+        working-directory: ./symfony
+
+  php-cs-fixer:
+    name: PHP-CS-Fixer Dry Run
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ vars.PHP_VERSION }}'
+          extensions: mbstring, xml, ctype, iconv, intl
+          tools: composer:v2
+
+      - name: Run PHP-CS-Fixer
+        run: ./vendor/bin/php-cs-fixer check --show-progress=dots --using-cache=no --verbose
+        working-directory: ./symfony
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [phpcs, phpstan, php-cs-fixer]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ vars.PHP_VERSION }}'
+          extensions: mbstring, xml, ctype, iconv, intl
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Run PHPUnit
+        run: |
+          mkdir -p build/logs
+          ./vendor/bin/phpunit --testsuite Unit --log-junit build/logs/junit.xml --coverage-text --coverage-clover build/logs/clover.xml
+        working-directory: ./symfony
+
+      - name: Convert Clover to LCOV
+        uses: andstor/clover2lcov-action@v1
+        with:
+          src: symfony/build/logs/clover.xml
+          dst: Create new scratch file from selectionbuild/logs/lcov.info
+
+#      - name: Check code coverage
+#        uses: VeryGoodOpenSource/very_good_coverage@v3
+#        with:
+#          path: Create new scratch file from selectionbuild/logs/lcov.info
+#          min_coverage: ${ vars.MIN_COVERAGE }
+#
+#      - name: Report coverage
+#        uses: dorny/test-reporter@v2
+#        with:
+#          name: Unit Test Coverage
+#          fail-on-error: true
+#          reporter: java-junit
+#          path: symfony/build/logs/junit.xml
+#
+#      - name: Upload coverage artifact
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: unit-test-coverage-report
+#          path: symfony/build/logs/junit.xml
+
+  feature-tests:
+    name: Feature Tests
+    runs-on: ubuntu-latest
+    needs: [phpcs, phpstan, php-cs-fixer]
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore cached dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/composer
+            ./symfony/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('symfony/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ vars.PHP_VERSION }}'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql
+          tools: composer:v2
+
+      - name: Run PHPUnit
+        env:
+          DATABASE_URL: postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.POSTGRES_DB }}?serverVersion=18&charset=utf8
+        run: |
+          php bin/console doctrine:database:create --if-not-exists
+          php bin/console doctrine:schema:create
+          ./vendor/bin/phpunit --testsuite Feature
+        working-directory: ./symfony

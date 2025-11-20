@@ -1,24 +1,26 @@
-FROM php:8.3.6-fpm AS build
+ARG PHP_VERSION=8.4-fpm-alpine
+FROM php:${PHP_VERSION} AS build
 
-RUN apt-get update && apt-get install -y git curl zip unzip libpq-dev
+RUN apk add --no-cache bash curl zip unzip
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS build-base linux-headers
 
-# install composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Install Redis
+RUN pecl install redis && docker-php-ext-enable redis
 
-# install pdo
-RUN docker-php-ext-install pdo pdo_pgsql && docker-php-ext-enable pdo pdo_pgsql
+# Install PDO/PostgreSQL
+RUN apk add --no-cache postgresql-libs postgresql-dev && docker-php-ext-install pdo_pgsql
 
-# enable OPcache
-RUN docker-php-ext-install opcache && docker-php-ext-enable opcache
+# Install & Configure OPcache
+RUN docker-php-ext-install opcache
 COPY docker/php/config/opcache.ini "${PHP_INI_DIR}/conf.d"
 
-# install xdebug
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Install & Configure Xdebug
 RUN pecl install xdebug && docker-php-ext-enable xdebug
 COPY docker/php/config/xdebug.ini "${PHP_INI_DIR}/conf.d"
 
-#FROM composer:latest AS composer
+RUN apk del .build-deps
 
 WORKDIR /var/www/symfony
-#
-#COPY ./symfony/ ./
-#RUN composer install --no-interaction --prefer-dist

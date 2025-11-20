@@ -3,10 +3,7 @@ param(
     [string]$BasePath
 )
 
-if (-not $BasePath) {
-    $BasePath = $PSScriptRoot
-}
+Set-Location -Path $PSScriptRoot
 
-$BasePath = $BasePath.TrimEnd('\') + '\'
 $Cert = Import-Certificate -FilePath "${BasePath}root-ca.pem" -CertStoreLocation Cert:\LocalMachine\Root
 $Cert.Thumbprint | Out-File -FilePath "${BasePath}thumbprint.txt"
