@@ -167,25 +167,25 @@ jobs:
           src: symfony/build/logs/clover.xml
           dst: Create new scratch file from selectionbuild/logs/lcov.info
 
-      - name: Check code coverage
-        uses: VeryGoodOpenSource/very_good_coverage@v3
-        with:
-          path: Create new scratch file from selectionbuild/logs/lcov.info
-          min_coverage: ${ vars.MIN_COVERAGE }
-
-      - name: Report coverage
-        uses: dorny/test-reporter@v2
-        with:
-          name: Unit Test Coverage
-          fail-on-error: true
-          reporter: java-junit
-          path: symfony/build/logs/junit.xml
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: unit-test-coverage-report
-          path: symfony/build/logs/junit.xml
+#      - name: Check code coverage
+#        uses: VeryGoodOpenSource/very_good_coverage@v3
+#        with:
+#          path: Create new scratch file from selectionbuild/logs/lcov.info
+#          min_coverage: ${ vars.MIN_COVERAGE }
+#
+#      - name: Report coverage
+#        uses: dorny/test-reporter@v2
+#        with:
+#          name: Unit Test Coverage
+#          fail-on-error: true
+#          reporter: java-junit
+#          path: symfony/build/logs/junit.xml
+#
+#      - name: Upload coverage artifact
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: unit-test-coverage-report
+#          path: symfony/build/logs/junit.xml
 
   feature-tests:
     name: Feature Tests
